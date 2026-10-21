@@ -1,7 +1,7 @@
 /* Casa Dulce · Service Worker
    Cambia CACHE_VERSION cuando actualices el index.html para forzar refresco. */
 
-const CACHE_VERSION = 'casa-dulce-v7';
+const CACHE_VERSION = 'casa-dulce-v8';
 const CACHE_FILES = [
   './',
   './index.html',

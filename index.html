@@ -99,23 +99,26 @@
 
   nav.tabs{
     display:flex;
-    gap:6px;
+    gap:4px;
     max-width:880px;
     margin:18px auto 0;
     padding:0 20px;
+    overflow-x:auto;
   }
   nav.tabs button{
     flex:1;
+    min-width:80px;
     background:transparent;
     border:none;
-    padding:10px 6px 12px;
+    padding:10px 4px 12px;
     font-family:'Inter';
     font-weight:600;
-    font-size:.82rem;
+    font-size:.78rem;
     color:var(--cocoa-soft);
     cursor:pointer;
     border-bottom:3px solid transparent;
     transition:.15s;
+    white-space:nowrap;
   }
   nav.tabs button.active{color:var(--carrot-dark);border-bottom-color:var(--carrot);}
   nav.tabs button:hover{color:var(--carrot-dark);}
@@ -264,7 +267,7 @@
     flex-wrap:wrap;gap:8px;
   }
   .price-out .big{font-size:1.7rem;font-weight:700;color:#FFD9A8;}
-  .price-out .label{font-size:.78rem;color:#D8C3AC;text-transform:uppercase;letter-spacing:.03em;}
+  .price-out .label{font-size:.78rem;color:var(--cocoa-soft);text-transform:uppercase;letter-spacing:.03em;}
 
   .recipe-card{
     display:flex;justify-content:space-between;align-items:center;
@@ -330,7 +333,6 @@
     width:18px;height:18px;cursor:pointer;accent-color:var(--leaf);
   }
 
-  /* Historial */
   .history-card{
     padding:14px 16px;
     border-bottom:1px solid var(--line);
@@ -357,22 +359,48 @@
   .helptext{font-size:.75rem;color:var(--cocoa-soft);margin-top:4px;}
   select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238A6A4F'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:30px;}
 
+  /* Importador */
+  #import-textarea{
+    min-height:180px;
+    font-family:'Courier New', monospace;
+    font-size:.85rem;
+    line-height:1.5;
+  }
+  .import-result{
+    margin-top:16px;
+    padding:14px 16px;
+    border-radius:10px;
+    border:1.5px solid var(--line);
+    background:var(--cream);
+  }
+  .import-result.ok{border-color:#9FE0B7;background:#E9FBF0;}
+  .import-result.warn{border-color:#E7C989;background:#FFF4DE;}
+  .import-result h4{margin:0 0 8px;font-size:.95rem;color:var(--cocoa);}
+  .import-result ul{margin:6px 0 0;padding-left:20px;font-size:.85rem;}
+  .import-result li{margin:3px 0;}
+  .missing-ing{
+    display:flex;justify-content:space-between;align-items:center;gap:8px;
+    background:#fff;border:1px solid var(--line);border-radius:8px;
+    padding:8px 10px;margin-bottom:6px;font-size:.85rem;
+  }
+  .missing-ing .mi-name{flex:2;font-weight:600;}
+  .missing-ing .mi-qty{flex:1;color:var(--cocoa-soft);text-align:right;}
+
   @media (max-width:520px){
     header.top{padding:20px 16px 16px;}
     header.top .logo{width:46px;height:46px;}
     header.top h1{font-size:2rem;}
     .ingredient-line .line-cost{text-align:left;padding-bottom:0;}
     .quote-head{display:none;}
-    nav.tabs button{font-size:.75rem;}
+    nav.tabs button{font-size:.72rem;padding:10px 2px 12px;}
   }
 
-  /* Modo impresión elegante */
   @media print{
     body{background:#fff !important;}
     header.top, nav.tabs, .toast, #quote-form-body,
     #shopping-list-card, #copy-shopping-btn, #print-shopping-btn,
-    #send-whatsapp-btn, #copy-quote-btn,
-    .btn, .helptext, .hint{display:none !important;}
+    #send-whatsapp-btn, #copy-quote-btn, #print-quote-btn,
+    .btn, .helptext, .hint, #import-form{display:none !important;}
     .panel{display:block !important;}
     #quote-result{display:block !important;}
     .quote-preview, .card{border:1px solid #ccc;box-shadow:none;}
@@ -404,6 +432,7 @@
   <button class="tab-btn active" data-tab="ingredientes" role="tab" aria-selected="true">Ingredientes</button>
   <button class="tab-btn" data-tab="recetas" role="tab" aria-selected="false">Recetas</button>
   <button class="tab-btn" data-tab="cotizar" role="tab" aria-selected="false">Cotizar</button>
+  <button class="tab-btn" data-tab="importar" role="tab" aria-selected="false">📥 Importar</button>
   <button class="tab-btn" data-tab="historial" role="tab" aria-selected="false">Historial</button>
 </nav>
 
@@ -660,6 +689,48 @@
     </div>
   </section>
 
+  <!-- IMPORTAR -->
+  <section id="panel-importar" class="panel">
+    <h2 class="section-title">📥 Importar recetas</h2>
+    <p class="section-sub">Pega el texto de tu receta (copiado de Word, PDF, correo, etc.) y la app intentará convertirla en una receta editable.</p>
+
+    <div class="card">
+      <div class="hint">
+        <strong>¿Cómo usarlo?</strong><br>
+        1. Selecciona en tu documento el bloque con el nombre, porciones e ingredientes (puedes incluir el procedimiento).<br>
+        2. Copia (Ctrl+C).<br>
+        3. Pégalo abajo.<br>
+        4. Presiona <strong>Analizar</strong>.<br>
+        5. Revisa el resultado, agrega los ingredientes que falten en tu banco y guarda.
+      </div>
+
+      <form id="import-form">
+        <label for="import-textarea">Texto de la receta</label>
+        <textarea id="import-textarea" placeholder="Ejemplo:
+Nombre: Panna cotta de vainilla
+Cantidad: 4 porciones
+
+Crema de leche   150 g
+Azúcar blanca    45 g
+Pasta de vainilla 10 g
+Gelatina sin sabor 2 g
+Agua 10 g"></textarea>
+
+        <div class="row" style="margin-top:10px;">
+          <div style="flex:2;min-width:160px;">
+            <label for="import-porciones">Porciones (si no las detecta, usa esta)</label>
+            <input type="number" id="import-porciones" min="1" step="1" value="4">
+          </div>
+          <div style="display:flex;align-items:flex-end;">
+            <button type="submit" class="btn btn-primary" style="width:100%;" id="import-analyze-btn">Analizar texto</button>
+          </div>
+        </div>
+      </form>
+
+      <div id="import-result" style="display:none;"></div>
+    </div>
+  </section>
+
   <!-- HISTORIAL -->
   <section id="panel-historial" class="panel">
     <h2 class="section-title">Historial de cotizaciones</h2>
@@ -753,6 +824,13 @@
     const d = new Date(ts);
     const pad = n => String(n).padStart(2,'0');
     return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  // Normaliza nombre para comparar (sin tildes, minúsculas)
+  function normName(s){
+    return (s||'').toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/\s+/g,' ')
+      .trim();
   }
 
   /* =========================================================
@@ -858,18 +936,154 @@
         .map(l => l.ingredientId);
     },
 
-    /* Duplica una receta con un nuevo id y nombre */
     duplicateRecipe(recipe, newName){
       const copy = JSON.parse(JSON.stringify(recipe));
       copy.id = uid();
       copy.nombre = newName || (recipe.nombre + ' (copia)');
       copy.updatedAt = Date.now();
       return copy;
+    },
+
+    /* Busca un ingrediente por nombre normalizado */
+    findIngredientByName(name){
+      const target = normName(name);
+      if(!target) return null;
+      // Coincidencia exacta
+      let found = this.ingredients.find(i => normName(i.nombre) === target);
+      if(found) return found;
+      // Coincidencia parcial: el nombre buscado contiene al del banco o viceversa
+      found = this.ingredients.find(i => {
+        const n = normName(i.nombre);
+        return n.length > 3 && (target.includes(n) || n.includes(target));
+      });
+      return found || null;
     }
   };
 
   /* =========================================================
-     3. VIEW
+     3. PARSER (importador)
+     ========================================================= */
+  const Parser = {
+    /* Detecta el nombre de la receta: "Nombre: X", "Receta: X", o primera línea con texto */
+    detectName(text){
+      const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+      for(const line of lines){
+        const m = line.match(/^(?:nombre|receta|plato|producto)\s*[:\-]\s*(.+)$/i);
+        if(m) return m[1].replace(/[|].*$/,'').trim();
+      }
+      // Si no hay "Nombre:", usar la primera línea si parece título (corta, sin números)
+      if(lines.length && lines[0].length < 60 && !/\d+\s*(g|ml|und|kg|litro)/i.test(lines[0])){
+        return lines[0];
+      }
+      return '';
+    },
+
+    /* Detecta porciones: "Cantidad: 4 porciones", "Porciones: 8", "Rinde: 10" */
+    detectPortions(text){
+      const patterns = [
+        /(?:cantidad|porciones|rinde|rendimiento)\s*[:\-]?\s*(\d+)\s*(?:porciones?|pers?|raciones?)?/i,
+        /(\d+)\s*(?:porciones?|pers?|raciones?)/i,
+        /(\d+)\s*persona(?:s)?/i
+      ];
+      for(const p of patterns){
+        const m = text.match(p);
+        if(m) return Math.max(1, parseInt(m[1]));
+      }
+      return null;
+    },
+
+    /* Detecta líneas de ingredientes.
+       Formatos soportados:
+         - "Crema de leche    150 g"
+         - "Crema de leche | 150 g"
+         - "150 g de crema de leche"
+         - "Crema de leche — 150 g"
+         - "Crema de leche .......... 150 g"
+         - "Huevo AA    50 g"
+         - "Ralladura de limón  1 und"
+         - "Sal  A/G"   (sin cantidad → se ignora o se pone 0)
+    */
+    detectIngredients(text){
+      const lines = text.split(/\r?\n/);
+      const result = [];
+      const seen = new Set();
+
+      // Palabras que indican que ya empezó el procedimiento
+      const stopWords = /^(procedimiento|preparaci[oó]n|pasos|instrucciones|m[eé]todo)\s*[:\-]/i;
+
+      // Unidades válidas (se aceptan variantes)
+      const unitMap = {
+        'g':'g','gr':'g','grs':'g','gramo':'g','gramos':'g',
+        'kg':'g','kilo':'g','kilos':'g','kilogramo':'g','kilogramos':'g',
+        'ml':'ml','mililitro':'ml','mililitros':'ml','cc':'ml',
+        'l':'ml','lt':'ml','litro':'ml','litros':'ml',
+        'und':'unidad','unid':'unidad','unidad':'unidad','unidades':'unidad',
+        'u':'unidad','pza':'unidad','pzas':'unidad','pieza':'unidad','piezas':'unidad'
+      };
+
+      // Regex principal: nombre + separador + cantidad + unidad
+      // El nombre puede tener espacios, tildes, paréntesis
+      const rx1 = /^([A-Za-zÁÉÍÓÚáéíóúÑñÜü][A-Za-zÁÉÍÓÚáéíóúÑñÜü0-9\s\.\,\(\)\/\-']+?)\s*(?:[\.\-\|—:]{1,}|\s{2,}|\t)\s*(\d+(?:[.,]\d+)?)\s*(g|gr|grs|gramos?|kg|kilos?|kilogramos?|ml|mililitros?|cc|l|lt|litros?|und|unid|unidades?|u|pza|pzas|piezas?)\b\.?/i;
+
+      // Formato invertido: "150 g de crema de leche"
+      const rx2 = /^(\d+(?:[.,]\d+)?)\s*(g|gr|grs|gramos?|kg|kilos?|kilogramos?|ml|mililitros?|cc|l|lt|litros?|und|unid|unidades?|u|pza|pzas|piezas?)\b\.?\s*(?:de\s+)?([A-Za-zÁÉÍÓÚáéíóúÑñÜü][A-Za-zÁÉÍÓÚáéíóúÑñÜü0-9\s\.\,\(\)\/\-']+?)\s*$/i;
+
+      for(const rawLine of lines){
+        const line = rawLine.trim();
+        if(!line) continue;
+        if(stopWords.test(line)) break; // ya empezó el procedimiento
+        if(line.length > 120) continue; // línea de párrafo, no ingrediente
+
+        let name = '', qty = 0, unit = '';
+
+        let m = line.match(rx1);
+        if(m){
+          name = m[1].trim();
+          qty = parseFloat(m[2].replace(',', '.')) || 0;
+          unit = (m[3] || '').toLowerCase();
+        } else {
+          m = line.match(rx2);
+          if(m){
+            qty = parseFloat(m[1].replace(',', '.')) || 0;
+            unit = (m[2] || '').toLowerCase();
+            name = m[3].trim();
+          }
+        }
+
+        if(!name || !unit) continue;
+
+        // Normalizar unidad
+        let normUnit = unitMap[unit] || unit;
+        // Convertir kg → g (×1000), l → ml (×1000)
+        if(unit === 'kg' || unit === 'kilo' || unit === 'kilos' || unit === 'kilogramo' || unit === 'kilogramos'){
+          qty = qty * 1000; normUnit = 'g';
+        }
+        if(unit === 'l' || unit === 'lt' || unit === 'litro' || unit === 'litros'){
+          qty = qty * 1000; normUnit = 'ml';
+        }
+
+        // Limpiar nombre
+        name = name
+          .replace(/[\.\-\|—:]+$/,'')   // separadores al final
+          .replace(/\s+/g,' ')
+          .trim();
+        if(!name) continue;
+        if(name.length < 2) continue;
+
+        // Evitar duplicados exactos
+        const key = normName(name);
+        if(seen.has(key)) continue;
+        seen.add(key);
+
+        result.push({ nombre: name, cantidad: qty, unidad: normUnit });
+      }
+
+      return result;
+    }
+  };
+
+  /* =========================================================
+     4. VIEW
      ========================================================= */
   const View = {
     renderIngredients(){
@@ -992,12 +1206,11 @@
   };
 
   /* =========================================================
-     4. APP
+     5. APP
      ========================================================= */
   const App = {
     currentMargin: 50,
     ingLineCounter: 0,
-    lastQuote: null,
 
     async persist(){
       Model.recalcAllRecipes();
@@ -1525,12 +1738,10 @@
         try{ await navigator.clipboard.writeText(body); toast('Cotización copiada'); }
         catch(e){ toast('No se pudo copiar'); }
       };
-
       document.getElementById('print-quote-btn').onclick = ()=>this.printQuote(body);
 
       this.renderShoppingList();
 
-      // Guardar automáticamente en el historial
       this.saveToHistory({
         cliente: cliente || 'Sin nombre',
         nota,
@@ -1570,6 +1781,169 @@
       setTimeout(()=>win.print(), 300);
     },
 
+    /* ---------- IMPORTAR ---------- */
+    analyzeImport(){
+      const text = document.getElementById('import-textarea').value;
+      if(!text.trim()){ toast('Pega primero el texto de la receta'); return; }
+
+      const nombre = Parser.detectName(text);
+      const porcionesDetected = Parser.detectPortions(text);
+      const porciones = porcionesDetected || (parseInt(document.getElementById('import-porciones').value) || 4);
+      const ingredientes = Parser.detectIngredients(text);
+
+      const result = document.getElementById('import-result');
+      result.style.display = 'block';
+
+      if(ingredientes.length === 0){
+        result.className = 'import-result warn';
+        result.innerHTML = `
+          <h4>⚠ No se detectaron ingredientes</h4>
+          <p style="font-size:.85rem;margin:0;">El formato no coincidió con ninguno esperado. Verifica que cada ingrediente esté en una línea con cantidad y unidad, por ejemplo:</p>
+          <pre style="font-size:.78rem;background:#fff;padding:8px;border-radius:6px;margin-top:6px;overflow-x:auto;">Crema de leche   150 g
+Azúcar blanca    45 g
+Gelatina sin sabor 2 g</pre>
+        `;
+        return;
+      }
+
+      // Separar en: ya existen / faltantes
+      const matched = [];
+      const missing = [];
+      ingredientes.forEach(ing=>{
+        const found = Model.findIngredientByName(ing.nombre);
+        if(found){
+          matched.push({ ...ing, found, exists:true });
+        } else {
+          missing.push({ ...ing, exists:false });
+        }
+      });
+
+      // Guardar estado para el botón "Crear receta"
+      App._importPending = { nombre, porciones, ingredientes, matched, missing };
+
+      let html = `<h4>✅ Análisis completo</h4>`;
+      html += `<p style="font-size:.85rem;margin:4px 0 10px;"><strong>Nombre detectado:</strong> ${escapeHtml(nombre || '(sin nombre — lo puedes escribir al guardar)')}</p>`;
+      html += `<p style="font-size:.85rem;margin:4px 0 10px;"><strong>Porciones:</strong> ${porciones}${porcionesDetected ? ' (detectadas en el texto)' : ' (valor por defecto)'}</p>`;
+      html += `<p style="font-size:.85rem;margin:4px 0 10px;"><strong>Ingredientes detectados:</strong> ${ingredientes.length}</p>`;
+
+      if(matched.length){
+        html += `<p style="font-size:.85rem;margin:8px 0 4px;color:var(--leaf-dark);"><strong>✔ Ya están en tu banco (${matched.length}):</strong></p>`;
+        html += `<ul>${matched.map(m=>`<li>${escapeHtml(m.nombre)} — ${m.cantidad} ${unidadLabels[m.unidad]||m.unidad}</li>`).join('')}</ul>`;
+      }
+
+      if(missing.length){
+        html += `<p style="font-size:.85rem;margin:12px 0 6px;color:var(--warning);"><strong>⚠ Faltan en tu banco (${missing.length}):</strong></p>`;
+        html += `<p class="helptext" style="margin-top:0;">Agrégalos con el precio que los compras. Después podrás crear la receta.</p>`;
+        missing.forEach((m, idx)=>{
+          html += `<div class="missing-ing" data-missing-idx="${idx}">
+            <div class="mi-name">${escapeHtml(m.nombre)}</div>
+            <div class="mi-qty">${m.cantidad} ${unidadLabels[m.unidad]||m.unidad}</div>
+            <button type="button" class="btn btn-ghost btn-sm" data-quick-add="${idx}">+ Agregar al banco</button>
+          </div>`;
+        });
+      }
+
+      html += `<div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+        <button class="btn btn-primary" id="import-create-btn" type="button">Crear receta en el formulario</button>
+        <button class="btn btn-ghost" id="import-cancel-btn" type="button">Cancelar</button>
+      </div>`;
+
+      result.className = 'import-result ' + (missing.length ? 'warn' : 'ok');
+      result.innerHTML = html;
+
+      // Enganchar botones de "agregar al banco"
+      result.querySelectorAll('[data-quick-add]').forEach(btn=>{
+        btn.addEventListener('click', ()=>App.quickAddMissing(parseInt(btn.dataset.quickAdd)));
+      });
+      document.getElementById('import-create-btn').addEventListener('click', ()=>App.createRecipeFromImport());
+      document.getElementById('import-cancel-btn').addEventListener('click', ()=>{
+        result.style.display = 'none';
+        App._importPending = null;
+      });
+    },
+
+    quickAddMissing(idx){
+      const pending = this._importPending;
+      if(!pending) return;
+      const m = pending.missing[idx];
+      if(!m) return;
+
+      const precioStr = prompt(`Precio pagado por "${m.nombre}" (en $):`, '');
+      if(precioStr === null) return;
+      const precio = parseFloat(precioStr.replace(/[^0-9.]/g,''));
+      if(!isFinite(precio) || precio <= 0){ toast('Precio inválido'); return; }
+
+      const cantidadStr = prompt(`¿Cuántos ${unidadLabels[m.unidad]} compraste por ese precio?`, String(m.cantidad || 1));
+      if(cantidadStr === null) return;
+      const cantidad = parseFloat(cantidadStr.replace(/[^0-9.]/g,''));
+      if(!isFinite(cantidad) || cantidad <= 0){ toast('Cantidad inválida'); return; }
+
+      const newIng = {
+        id: uid(),
+        nombre: m.nombre,
+        unidad: m.unidad,
+        precio,
+        cantidad
+      };
+      Model.ingredients.push(newIng);
+      saveList(STORAGE_KEYS.ingredients, Model.ingredients).then(()=>{
+        View.renderIngredients();
+        // Re-analizar para actualizar la lista de faltantes
+        this.analyzeImport();
+        toast('Ingrediente agregado al banco');
+      });
+    },
+
+    async createRecipeFromImport(){
+      const pending = this._importPending;
+      if(!pending) return;
+
+      // Volver a verificar cuáles existen ahora (por si agregaron algunos con quick-add)
+      const stillMissing = [];
+      const lines = [];
+      pending.ingredientes.forEach(ing=>{
+        const found = Model.findIngredientByName(ing.nombre);
+        if(found){
+          lines.push({ ingredientId: found.id, grams: ing.cantidad });
+        } else {
+          stillMissing.push(ing);
+        }
+      });
+
+      if(stillMissing.length > 0){
+        toast(`Faltan ${stillMissing.length} ingrediente(s). Agrégalos o quítalos antes de crear la receta.`);
+        return;
+      }
+
+      if(lines.length === 0){ toast('No hay ingredientes para crear la receta'); return; }
+
+      // Crear receta
+      const recipe = {
+        id: uid(),
+        nombre: pending.nombre || 'Receta importada',
+        porciones: pending.porciones,
+        ingredientLines: lines,
+        extraLines: [],
+        margin: 50,
+        updatedAt: Date.now()
+      };
+      const c = Model.calcRecipe(recipe);
+      recipe.totalCost = c.total;
+      recipe.priceTotal = c.priceTotal;
+      recipe.pricePortion = c.pricePortion;
+
+      Model.recipes.push(recipe);
+      await this.persist();
+
+      // Ir a Recetas para que vean el resultado
+      document.querySelector('[data-tab="recetas"]').click();
+      document.getElementById('import-result').style.display = 'none';
+      document.getElementById('import-textarea').value = '';
+      this._importPending = null;
+
+      toast('¡Receta creada! Ahora puedes ajustarla');
+    },
+
     /* ---------- HISTORIAL ---------- */
     saveToHistory(data){
       const entry = {
@@ -1585,7 +1959,6 @@
     viewHistory(id){
       const h = Model.history.find(x=>x.id===id);
       if(!h) return;
-      // Generar cotización visual en un modal simple (prompt con el texto)
       const win = window.open('', '_blank');
       const safe = (h.quoteText || '').replace(/[<>&]/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
       win.document.write(`<pre style="font-family:Arial,sans-serif;font-size:14px;padding:20px;white-space:pre-wrap;max-width:700px;margin:20px auto;">${safe}</pre>`);
@@ -1626,7 +1999,7 @@
     exportData(){
       const payload = {
         app: 'casa dulce',
-        version: 6,
+        version: 7,
         exportedAt: new Date().toISOString(),
         ingredients: Model.ingredients,
         recipes: Model.recipes,
@@ -1695,7 +2068,7 @@
   };
 
   /* =========================================================
-     5. EVENTOS
+     6. EVENTOS
      ========================================================= */
   document.querySelectorAll('.tab-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -1763,6 +2136,13 @@
 
   document.getElementById('clear-history-btn').addEventListener('click', ()=>App.clearHistory());
 
+  /* Importar */
+  document.getElementById('import-form').addEventListener('submit', (e)=>{
+    e.preventDefault();
+    App.analyzeImport();
+  });
+
+  /* Backup */
   document.getElementById('export-data-btn').addEventListener('click', ()=>App.exportData());
   document.getElementById('import-data-btn').addEventListener('click', ()=>{
     document.getElementById('import-data-input').click();
@@ -1774,7 +2154,7 @@
   });
 
   /* =========================================================
-     6. INIT
+     7. INIT
      ========================================================= */
   (async function init(){
     Model.ingredients = await loadList(STORAGE_KEYS.ingredients);
@@ -1787,7 +2167,6 @@
     App.updateRecipeSummary();
     App.updateQuoteTotals();
 
-    // Registrar service worker para PWA
     if('serviceWorker' in navigator){
       navigator.serviceWorker.register('sw.js').catch(err=>{
         console.warn('SW no registrado:', err);

@@ -1,0 +1,20 @@
+{
+  "name": "Casa Dulce · Costeo y Cotizaciones",
+  "short_name": "Casa Dulce",
+  "description": "Costeo y cotizaciones de repostería artesanal",
+  "lang": "es",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FBF3E4",
+  "theme_color": "#E2712C",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23FBF3E4'/%3E%3Ccircle cx='256' cy='256' r='230' fill='%23F3E7D2' stroke='%23E2712C' stroke-width='18'/%3E%3Cpath d='M128 312 L256 184 L384 312' fill='none' stroke='%23E2712C' stroke-width='22' stroke-linecap='round' stroke-linejoin='round'/%3E%3Crect x='156' y='300' width='200' height='92' rx='18' fill='%235B7247'/%3E%3Ccircle cx='256' cy='128' r='22' fill='%23E2712C'/%3E%3Ccircle cx='184' cy='428' r='14' fill='%23E2712C'/%3E%3Ccircle cx='328' cy='428' r='14' fill='%235B7247'/%3E%3C/svg%3E",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -267,7 +267,7 @@
     flex-wrap:wrap;gap:8px;
   }
   .price-out .big{font-size:1.7rem;font-weight:700;color:#FFD9A8;}
-  .price-out .label{font-size:.78rem;color:var(--cocoa-soft);text-transform:uppercase;letter-spacing:.03em;}
+  .price-out .label{font-size:.78rem;color:#D8C3AC;text-transform:uppercase;letter-spacing:.03em;}
 
   .recipe-card{
     display:flex;justify-content:space-between;align-items:center;
@@ -825,7 +825,6 @@ Agua 10 g"></textarea>
     const pad = n => String(n).padStart(2,'0');
     return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
-  // Normaliza nombre para comparar (sin tildes, minúsculas)
   function normName(s){
     return (s||'').toLowerCase()
       .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
@@ -944,14 +943,11 @@ Agua 10 g"></textarea>
       return copy;
     },
 
-    /* Busca un ingrediente por nombre normalizado */
     findIngredientByName(name){
       const target = normName(name);
       if(!target) return null;
-      // Coincidencia exacta
       let found = this.ingredients.find(i => normName(i.nombre) === target);
       if(found) return found;
-      // Coincidencia parcial: el nombre buscado contiene al del banco o viceversa
       found = this.ingredients.find(i => {
         const n = normName(i.nombre);
         return n.length > 3 && (target.includes(n) || n.includes(target));
@@ -961,24 +957,21 @@ Agua 10 g"></textarea>
   };
 
   /* =========================================================
-     3. PARSER (importador)
+     3. PARSER
      ========================================================= */
   const Parser = {
-    /* Detecta el nombre de la receta: "Nombre: X", "Receta: X", o primera línea con texto */
     detectName(text){
       const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
       for(const line of lines){
         const m = line.match(/^(?:nombre|receta|plato|producto)\s*[:\-]\s*(.+)$/i);
         if(m) return m[1].replace(/[|].*$/,'').trim();
       }
-      // Si no hay "Nombre:", usar la primera línea si parece título (corta, sin números)
       if(lines.length && lines[0].length < 60 && !/\d+\s*(g|ml|und|kg|litro)/i.test(lines[0])){
         return lines[0];
       }
       return '';
     },
 
-    /* Detecta porciones: "Cantidad: 4 porciones", "Porciones: 8", "Rinde: 10" */
     detectPortions(text){
       const patterns = [
         /(?:cantidad|porciones|rinde|rendimiento)\s*[:\-]?\s*(\d+)\s*(?:porciones?|pers?|raciones?)?/i,
@@ -992,26 +985,12 @@ Agua 10 g"></textarea>
       return null;
     },
 
-    /* Detecta líneas de ingredientes.
-       Formatos soportados:
-         - "Crema de leche    150 g"
-         - "Crema de leche | 150 g"
-         - "150 g de crema de leche"
-         - "Crema de leche — 150 g"
-         - "Crema de leche .......... 150 g"
-         - "Huevo AA    50 g"
-         - "Ralladura de limón  1 und"
-         - "Sal  A/G"   (sin cantidad → se ignora o se pone 0)
-    */
     detectIngredients(text){
       const lines = text.split(/\r?\n/);
       const result = [];
       const seen = new Set();
-
-      // Palabras que indican que ya empezó el procedimiento
       const stopWords = /^(procedimiento|preparaci[oó]n|pasos|instrucciones|m[eé]todo)\s*[:\-]/i;
 
-      // Unidades válidas (se aceptan variantes)
       const unitMap = {
         'g':'g','gr':'g','grs':'g','gramo':'g','gramos':'g',
         'kg':'g','kilo':'g','kilos':'g','kilogramo':'g','kilogramos':'g',
@@ -1021,21 +1000,16 @@ Agua 10 g"></textarea>
         'u':'unidad','pza':'unidad','pzas':'unidad','pieza':'unidad','piezas':'unidad'
       };
 
-      // Regex principal: nombre + separador + cantidad + unidad
-      // El nombre puede tener espacios, tildes, paréntesis
       const rx1 = /^([A-Za-zÁÉÍÓÚáéíóúÑñÜü][A-Za-zÁÉÍÓÚáéíóúÑñÜü0-9\s\.\,\(\)\/\-']+?)\s*(?:[\.\-\|—:]{1,}|\s{2,}|\t)\s*(\d+(?:[.,]\d+)?)\s*(g|gr|grs|gramos?|kg|kilos?|kilogramos?|ml|mililitros?|cc|l|lt|litros?|und|unid|unidades?|u|pza|pzas|piezas?)\b\.?/i;
-
-      // Formato invertido: "150 g de crema de leche"
       const rx2 = /^(\d+(?:[.,]\d+)?)\s*(g|gr|grs|gramos?|kg|kilos?|kilogramos?|ml|mililitros?|cc|l|lt|litros?|und|unid|unidades?|u|pza|pzas|piezas?)\b\.?\s*(?:de\s+)?([A-Za-zÁÉÍÓÚáéíóúÑñÜü][A-Za-zÁÉÍÓÚáéíóúÑñÜü0-9\s\.\,\(\)\/\-']+?)\s*$/i;
 
       for(const rawLine of lines){
         const line = rawLine.trim();
         if(!line) continue;
-        if(stopWords.test(line)) break; // ya empezó el procedimiento
-        if(line.length > 120) continue; // línea de párrafo, no ingrediente
+        if(stopWords.test(line)) break;
+        if(line.length > 120) continue;
 
         let name = '', qty = 0, unit = '';
-
         let m = line.match(rx1);
         if(m){
           name = m[1].trim();
@@ -1052,9 +1026,7 @@ Agua 10 g"></textarea>
 
         if(!name || !unit) continue;
 
-        // Normalizar unidad
         let normUnit = unitMap[unit] || unit;
-        // Convertir kg → g (×1000), l → ml (×1000)
         if(unit === 'kg' || unit === 'kilo' || unit === 'kilos' || unit === 'kilogramo' || unit === 'kilogramos'){
           qty = qty * 1000; normUnit = 'g';
         }
@@ -1062,22 +1034,15 @@ Agua 10 g"></textarea>
           qty = qty * 1000; normUnit = 'ml';
         }
 
-        // Limpiar nombre
-        name = name
-          .replace(/[\.\-\|—:]+$/,'')   // separadores al final
-          .replace(/\s+/g,' ')
-          .trim();
-        if(!name) continue;
-        if(name.length < 2) continue;
+        name = name.replace(/[\.\-\|—:]+$/,'').replace(/\s+/g,' ').trim();
+        if(!name || name.length < 2) continue;
 
-        // Evitar duplicados exactos
         const key = normName(name);
         if(seen.has(key)) continue;
         seen.add(key);
 
         result.push({ nombre: name, cantidad: qty, unidad: normUnit });
       }
-
       return result;
     }
   };
@@ -1211,6 +1176,7 @@ Agua 10 g"></textarea>
   const App = {
     currentMargin: 50,
     ingLineCounter: 0,
+    _importPending: null,
 
     async persist(){
       Model.recalcAllRecipes();
@@ -1806,7 +1772,6 @@ Gelatina sin sabor 2 g</pre>
         return;
       }
 
-      // Separar en: ya existen / faltantes
       const matched = [];
       const missing = [];
       ingredientes.forEach(ing=>{
@@ -1818,7 +1783,6 @@ Gelatina sin sabor 2 g</pre>
         }
       });
 
-      // Guardar estado para el botón "Crear receta"
       App._importPending = { nombre, porciones, ingredientes, matched, missing };
 
       let html = `<h4>✅ Análisis completo</h4>`;
@@ -1851,7 +1815,6 @@ Gelatina sin sabor 2 g</pre>
       result.className = 'import-result ' + (missing.length ? 'warn' : 'ok');
       result.innerHTML = html;
 
-      // Enganchar botones de "agregar al banco"
       result.querySelectorAll('[data-quick-add]').forEach(btn=>{
         btn.addEventListener('click', ()=>App.quickAddMissing(parseInt(btn.dataset.quickAdd)));
       });
@@ -1878,17 +1841,10 @@ Gelatina sin sabor 2 g</pre>
       const cantidad = parseFloat(cantidadStr.replace(/[^0-9.]/g,''));
       if(!isFinite(cantidad) || cantidad <= 0){ toast('Cantidad inválida'); return; }
 
-      const newIng = {
-        id: uid(),
-        nombre: m.nombre,
-        unidad: m.unidad,
-        precio,
-        cantidad
-      };
+      const newIng = { id: uid(), nombre: m.nombre, unidad: m.unidad, precio, cantidad };
       Model.ingredients.push(newIng);
       saveList(STORAGE_KEYS.ingredients, Model.ingredients).then(()=>{
         View.renderIngredients();
-        // Re-analizar para actualizar la lista de faltantes
         this.analyzeImport();
         toast('Ingrediente agregado al banco');
       });
@@ -1898,7 +1854,6 @@ Gelatina sin sabor 2 g</pre>
       const pending = this._importPending;
       if(!pending) return;
 
-      // Volver a verificar cuáles existen ahora (por si agregaron algunos con quick-add)
       const stillMissing = [];
       const lines = [];
       pending.ingredientes.forEach(ing=>{
@@ -1917,7 +1872,6 @@ Gelatina sin sabor 2 g</pre>
 
       if(lines.length === 0){ toast('No hay ingredientes para crear la receta'); return; }
 
-      // Crear receta
       const recipe = {
         id: uid(),
         nombre: pending.nombre || 'Receta importada',
@@ -1935,7 +1889,6 @@ Gelatina sin sabor 2 g</pre>
       Model.recipes.push(recipe);
       await this.persist();
 
-      // Ir a Recetas para que vean el resultado
       document.querySelector('[data-tab="recetas"]').click();
       document.getElementById('import-result').style.display = 'none';
       document.getElementById('import-textarea').value = '';
@@ -1946,11 +1899,7 @@ Gelatina sin sabor 2 g</pre>
 
     /* ---------- HISTORIAL ---------- */
     saveToHistory(data){
-      const entry = {
-        id: uid(),
-        createdAt: Date.now(),
-        ...data
-      };
+      const entry = { id: uid(), createdAt: Date.now(), ...data };
       Model.history.push(entry);
       saveList(STORAGE_KEYS.history, Model.history);
       View.renderHistory();
@@ -1999,7 +1948,7 @@ Gelatina sin sabor 2 g</pre>
     exportData(){
       const payload = {
         app: 'casa dulce',
-        version: 7,
+        version: 8,
         exportedAt: new Date().toISOString(),
         ingredients: Model.ingredients,
         recipes: Model.recipes,
@@ -2136,13 +2085,11 @@ Gelatina sin sabor 2 g</pre>
 
   document.getElementById('clear-history-btn').addEventListener('click', ()=>App.clearHistory());
 
-  /* Importar */
   document.getElementById('import-form').addEventListener('submit', (e)=>{
     e.preventDefault();
     App.analyzeImport();
   });
 
-  /* Backup */
   document.getElementById('export-data-btn').addEventListener('click', ()=>App.exportData());
   document.getElementById('import-data-btn').addEventListener('click', ()=>{
     document.getElementById('import-data-input').click();

@@ -587,7 +587,7 @@
   <!-- COTIZAR -->
   <section id="panel-cotizar" class="panel">
     <h2 class="section-title">Cotización para el cliente</h2>
-    <p class="section-sub">Elige recetas, indica cuántas unidades y cuántas porciones necesita el cliente. La app escala la receta automáticamente.</p>
+    <p class="section-sub">Elige la receta, indica cuántas unidades quiere el cliente y para cuántas porciones es cada una. La app escala la receta base automáticamente.</p>
 
     <div class="card">
       <div class="row">
@@ -1948,7 +1948,7 @@ Gelatina sin sabor 2 g</pre>
     exportData(){
       const payload = {
         app: 'casa dulce',
-        version: 8,
+        version: 9,
         exportedAt: new Date().toISOString(),
         ingredients: Model.ingredients,
         recipes: Model.recipes,
